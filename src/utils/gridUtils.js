@@ -13,19 +13,21 @@
  */
 export function pixelToGridPosition(x, y, gridConfig, gridContainer) {
   if (!gridContainer) return { column: 1, row: 1 }
-  
+
   const rect = gridContainer.getBoundingClientRect()
-  const relativeX = x - rect.left
-  const relativeY = y - rect.top
-  
+  // x, y 已经是相对于容器的坐标，不需要再减去 rect.left/top
+  const relativeX = x
+  const relativeY = y
+
   // 计算单元格尺寸
   const cellWidth = rect.width / gridConfig.columns
   const cellHeight = getCellHeight(gridConfig, gridContainer)
-  
+
   // 计算Grid坐标（从1开始）
-  const column = Math.max(1, Math.min(gridConfig.columns, Math.ceil(relativeX / cellWidth)))
-  const row = Math.max(1, Math.ceil(relativeY / cellHeight))
-  
+  // 使用 Math.floor 而不是 Math.ceil 来获得更准确的位置
+  const column = Math.max(1, Math.min(gridConfig.columns, Math.floor(relativeX / cellWidth) + 1))
+  const row = Math.max(1, Math.floor(relativeY / cellHeight) + 1)
+
   return { column, row }
 }
 
@@ -60,16 +62,19 @@ export function gridToPixelPosition(column, row, gridConfig, gridContainer) {
  */
 export function getCellHeight(gridConfig, gridContainer) {
   if (!gridContainer) return 60
-  
-  // 如果设置了最小行高，使用最小行高
-  if (gridConfig.minRowHeight) {
-    return parseInt(gridConfig.minRowHeight) || 60
+
+  // 始终使用最小行高，确保网格单元格有固定的高度
+  const minRowHeight = parseInt(gridConfig.minRowHeight) || 60
+
+  // 对于auto行模式，直接使用最小行高
+  if (gridConfig.rows === 'auto') {
+    return minRowHeight
   }
-  
-  // 否则根据容器高度和行数计算
+
+  // 对于固定行数模式，计算实际行高，但不小于最小行高
   const rect = gridContainer.getBoundingClientRect()
-  const estimatedRows = Math.max(1, gridConfig.rows === 'auto' ? 5 : gridConfig.rows)
-  return rect.height / estimatedRows
+  const calculatedHeight = rect.height / gridConfig.rows
+  return Math.max(minRowHeight, calculatedHeight)
 }
 
 /**
@@ -162,10 +167,13 @@ export function getGridContainerStyles(gridConfig) {
   return {
     display: 'grid',
     gridTemplateColumns: `repeat(${columns}, 1fr)`,
-    gridTemplateRows: gridConfig.rows === 'auto' ? 'auto' : `repeat(${gridConfig.rows}, minmax(${minRowHeight}, auto))`,
+    gridTemplateRows: gridConfig.rows === 'auto'
+      ? `repeat(10, ${minRowHeight})` // 创建10行固定高度的网格
+      : `repeat(${gridConfig.rows}, ${minRowHeight})`,
     gap: `${rowGap} ${columnGap}`,
     width: '100%',
-    minHeight: '400px'
+    minHeight: '400px',
+    gridAutoRows: minRowHeight // 确保新行也使用固定高度
   }
 }
 
@@ -228,7 +236,23 @@ export function convertPositionToGrid(position, gridConfig, gridContainer) {
  */
 export function getGridLinesStyles(gridConfig) {
   if (!gridConfig.showGridLines) return { display: 'none' }
-  
+
+  const {
+    columns = 3,
+    minRowHeight = '60px'
+  } = gridConfig
+
+  // 解析最小行高
+  const minHeight = parseInt(minRowHeight) || 60
+
+  // 计算网格线的尺寸，考虑间距
+  const colGap = parseInt(gridConfig.columnGap) || 20
+  const rowGapValue = parseInt(gridConfig.rowGap) || 20
+
+  // 计算每个网格单元格的实际尺寸（包括间距）
+  const columnWidth = `calc((100% + ${colGap}px) / ${columns})`
+  const rowHeight = minHeight + rowGapValue
+
   return {
     position: 'absolute',
     top: 0,
@@ -236,10 +260,15 @@ export function getGridLinesStyles(gridConfig) {
     right: 0,
     bottom: 0,
     pointerEvents: 'none',
+    zIndex: 10, // 提高z-index确保网格线在最上层
     backgroundImage: `
-      linear-gradient(to right, #e0e0e0 1px, transparent 1px),
-      linear-gradient(to bottom, #e0e0e0 1px, transparent 1px)
+      linear-gradient(to right, rgba(0, 123, 255, 0.8) 2px, transparent 2px),
+      linear-gradient(to bottom, rgba(0, 123, 255, 0.8) 2px, transparent 2px)
     `,
-    backgroundSize: `${100 / gridConfig.columns}% ${gridConfig.minRowHeight || '60px'}`
+    backgroundSize: `${columnWidth} ${rowHeight}px`,
+    backgroundPosition: '0 0',
+    // 添加边框增强视觉效果
+    border: '2px solid rgba(0, 123, 255, 0.6)',
+    borderRadius: '4px'
   }
 }

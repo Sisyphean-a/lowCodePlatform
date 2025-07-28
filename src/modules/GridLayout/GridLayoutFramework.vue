@@ -15,7 +15,10 @@
         v-if="gridConfig.showGridLines"
         class="grid-lines"
         :style="gridLinesStyles"
-      ></div>
+      >
+        <!-- 网格边框 -->
+        <div class="grid-border"></div>
+      </div>
 
       <!-- 拖拽悬停指示器 -->
       <div
@@ -348,7 +351,18 @@ onUnmounted(() => {
   right: 0;
   bottom: 0;
   pointer-events: none;
-  opacity: 0.5;
+}
+
+.grid-border {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 3px solid rgba(0, 123, 255, 0.7);
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.2);
 }
 
 .grid-item {

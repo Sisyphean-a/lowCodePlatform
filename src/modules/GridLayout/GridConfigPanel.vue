@@ -46,7 +46,7 @@
                 :min="1"
                 :max="12"
                 density="compact"
-                style="width: 60px"
+                style="width: 70px"
                 variant="outlined"
                 hide-details
                 @update:model-value="updateConfig"
@@ -58,29 +58,46 @@
         <!-- 行数配置 -->
         <div class="mb-4">
           <v-label class="text-subtitle-2 mb-2">行数</v-label>
-          <v-radio-group
+
+          <!-- 行数模式选择 -->
+          <v-btn-toggle
             v-model="localConfig.rows"
-            inline
+            variant="outlined"
             density="compact"
+            class="mb-3"
             @update:model-value="updateConfig"
           >
-            <v-radio label="自动" value="auto"></v-radio>
-            <v-radio label="固定" value="fixed"></v-radio>
-          </v-radio-group>
-          
-          <v-text-field
-            v-if="localConfig.rows === 'fixed'"
-            v-model.number="localConfig.fixedRows"
-            type="number"
-            :min="1"
-            :max="20"
-            label="行数"
-            density="compact"
-            variant="outlined"
-            hide-details
-            class="mt-2"
-            @update:model-value="updateConfig"
-          ></v-text-field>
+            <v-btn value="auto" size="small">自动</v-btn>
+            <v-btn value="fixed" size="small">固定</v-btn>
+          </v-btn-toggle>
+
+          <!-- 固定行数配置 -->
+          <div v-if="localConfig.rows === 'fixed'">
+            <v-slider
+              v-model="localConfig.fixedRows"
+              :min="1"
+              :max="20"
+              :step="1"
+              show-ticks="always"
+              tick-size="4"
+              class="mb-2"
+              @update:model-value="updateConfig"
+            >
+              <template v-slot:append>
+                <v-text-field
+                  v-model.number="localConfig.fixedRows"
+                  type="number"
+                  :min="1"
+                  :max="20"
+                  density="compact"
+                  style="width: 70px"
+                  variant="outlined"
+                  hide-details
+                  @update:model-value="updateConfig"
+                ></v-text-field>
+              </template>
+            </v-slider>
+          </div>
         </div>
 
         <v-divider class="my-4"></v-divider>
@@ -105,7 +122,7 @@
                 :min="0"
                 :max="50"
                 density="compact"
-                style="width: 60px"
+                style="width: 80px"
                 variant="outlined"
                 hide-details
                 suffix="px"
@@ -134,7 +151,7 @@
                 :min="0"
                 :max="50"
                 density="compact"
-                style="width: 60px"
+                style="width: 80px"
                 variant="outlined"
                 hide-details
                 suffix="px"
@@ -164,7 +181,7 @@
                 :min="40"
                 :max="200"
                 density="compact"
-                style="width: 70px"
+                style="width: 90px"
                 variant="outlined"
                 hide-details
                 suffix="px"

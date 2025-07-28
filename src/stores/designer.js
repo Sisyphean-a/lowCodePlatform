@@ -98,14 +98,6 @@ export const useDesignerStore = defineStore('designer', () => {
     const newComponent = {
       id: `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ...componentData,
-      // 保留position以兼容旧版本
-      position: {
-        x: 50 + (components.value.length * 20),
-        y: 50 + (components.value.length * 20),
-        width: 200,
-        height: 40,
-        zIndex: components.value.length + 1
-      },
       // 使用Grid位置作为主要定位方式
       gridPosition: {
         column: gridPosition.column,
@@ -144,13 +136,7 @@ export const useDesignerStore = defineStore('designer', () => {
     }
   }
 
-  // 更新组件位置
-  function updateComponentPosition(componentId, position) {
-    const component = components.value.find(comp => comp.id === componentId)
-    if (component) {
-      component.position = { ...component.position, ...position }
-    }
-  }
+
   
   // 选中组件
   function selectComponent(componentId) {
@@ -354,7 +340,7 @@ export const useDesignerStore = defineStore('designer', () => {
     addComponent,
     removeComponent,
     updateComponent,
-    updateComponentPosition,
+
     selectComponent,
     toggleComponentSelection,
     clearSelection,
