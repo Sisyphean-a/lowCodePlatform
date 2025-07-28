@@ -1,8 +1,26 @@
 <template>
   <v-app>
-    <v-app-bar color="primary" dark>
-      <v-app-bar-title>低代码表单设计器</v-app-bar-title>
+    <v-app-bar color="primary" dark elevation="2">
+      <v-app-bar-title>
+        <v-icon class="me-2">mdi-view-dashboard</v-icon>
+        低代码平台设计器
+      </v-app-bar-title>
       <v-spacer></v-spacer>
+
+      <!-- 工具栏按钮组 -->
+      <v-btn-group variant="text" color="white">
+        <v-btn @click="undoAction" :disabled="!canUndo">
+          <v-icon>mdi-undo</v-icon>
+          <v-tooltip activator="parent" location="bottom">撤销</v-tooltip>
+        </v-btn>
+        <v-btn @click="redoAction" :disabled="!canRedo">
+          <v-icon>mdi-redo</v-icon>
+          <v-tooltip activator="parent" location="bottom">重做</v-tooltip>
+        </v-btn>
+      </v-btn-group>
+
+      <v-divider vertical class="mx-2"></v-divider>
+
       <v-btn variant="text" @click="previewCode">
         <v-icon>mdi-eye</v-icon>
         预览代码
@@ -18,24 +36,46 @@
     </v-app-bar>
 
     <v-main>
-      <v-container fluid class="pa-0" style="height: calc(100vh - 64px);">
-        <v-row no-gutters style="height: 100%;">
-          <!-- 左侧组件库 -->
-          <v-col cols="2" class="border-e">
-            <ComponentLibrary />
-          </v-col>
+      <div class="designer-layout" style="height: calc(100vh - 64px);">
+        <!-- 左侧组件库面板 -->
+        <div class="left-panel" :style="{ width: leftPanelWidth + 'px' }">
+          <ComponentLibrary />
+        </div>
 
-          <!-- 中间设计区域 -->
-          <v-col cols="8">
+        <!-- 左侧分割线 -->
+        <ResizableSplitter
+          direction="vertical"
+          :min-size="200"
+          :max-size="400"
+          @resize="handleLeftPanelResize"
+        />
+
+        <!-- 中间主要内容区域 -->
+        <div class="main-content">
+          <!-- 顶部工具栏 -->
+          <div class="toolbar">
+            <DesignerToolbar />
+          </div>
+
+          <!-- 设计画布 -->
+          <div class="canvas-container">
             <DragArea />
-          </v-col>
+          </div>
+        </div>
 
-          <!-- 右侧属性面板 -->
-          <v-col cols="2" class="border-s">
-            <PropertyPanel />
-          </v-col>
-        </v-row>
-      </v-container>
+        <!-- 右侧分割线 -->
+        <ResizableSplitter
+          direction="vertical"
+          :min-size="280"
+          :max-size="500"
+          @resize="handleRightPanelResize"
+        />
+
+        <!-- 右侧属性面板 -->
+        <div class="right-panel" :style="{ width: rightPanelWidth + 'px' }">
+          <PropertyPanel />
+        </div>
+      </div>
     </v-main>
 
     <!-- 代码预览对话框 -->
@@ -63,16 +103,27 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useDesignerStore } from '@/stores/designer'
 import ComponentLibrary from '@/modules/ComponentLibrary/index.vue'
 import DragArea from '@/modules/DragArea/index.vue'
 import PropertyPanel from '@/modules/PropertyPanel/index.vue'
+import ResizableSplitter from '@/components/common/ResizableSplitter.vue'
+import DesignerToolbar from '@/components/common/DesignerToolbar.vue'
 import { generateVueCode } from '@/modules/CodeGenerator'
 
 const designerStore = useDesignerStore()
 const showCodeDialog = ref(false)
 const generatedCode = ref('')
+
+// 面板宽度管理
+const leftPanelWidth = ref(280)
+const rightPanelWidth = ref(320)
+
+// 计算属性
+const components = computed(() => designerStore.components)
+const canUndo = computed(() => designerStore.canUndo)
+const canRedo = computed(() => designerStore.canRedo)
 
 // 预览代码
 const previewCode = () => {
@@ -104,21 +155,148 @@ const copyCode = async () => {
   }
 }
 
+// 面板大小调整
+const handleLeftPanelResize = (newWidth) => {
+  leftPanelWidth.value = newWidth
+}
+
+const handleRightPanelResize = (newWidth) => {
+  rightPanelWidth.value = newWidth
+}
+
+// 工具栏操作
+const undoAction = () => {
+  designerStore.undo()
+}
+
+const redoAction = () => {
+  designerStore.redo()
+}
+
+
+
+// 键盘快捷键处理
+const handleKeyDown = (event) => {
+  // 防止在输入框中触发快捷键
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+    return
+  }
+
+  const { ctrlKey, metaKey, key } = event
+  const isCtrl = ctrlKey || metaKey
+
+  if (isCtrl) {
+    switch (key.toLowerCase()) {
+      case 'z':
+        event.preventDefault()
+        if (event.shiftKey) {
+          designerStore.redo()
+        } else {
+          designerStore.undo()
+        }
+        break
+      case 'y':
+        event.preventDefault()
+        designerStore.redo()
+        break
+      case 'c':
+        event.preventDefault()
+        if (designerStore.selectedComponentId) {
+          const componentData = designerStore.copyComponent(designerStore.selectedComponentId)
+          localStorage.setItem('copiedComponent', JSON.stringify(componentData))
+        }
+        break
+      case 'v':
+        event.preventDefault()
+        try {
+          const copiedData = localStorage.getItem('copiedComponent')
+          if (copiedData) {
+            const componentData = JSON.parse(copiedData)
+            designerStore.pasteComponent(componentData)
+          }
+        } catch (error) {
+          console.error('粘贴失败:', error)
+        }
+        break
+      case 'a':
+        event.preventDefault()
+        // 全选所有组件
+        designerStore.selectedComponentIds = designerStore.components.map(c => c.id)
+        break
+    }
+  } else {
+    switch (key) {
+      case 'Delete':
+      case 'Backspace':
+        event.preventDefault()
+        if (designerStore.selectedComponentId) {
+          designerStore.removeComponent(designerStore.selectedComponentId)
+        }
+        break
+      case 'Escape':
+        event.preventDefault()
+        designerStore.clearSelection()
+        break
+    }
+  }
+}
+
 // 重置设计器
 const resetDesigner = () => {
   if (confirm('确定要重置设计器吗？这将清除所有组件。')) {
     designerStore.reset()
   }
 }
+
+// 生命周期
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleKeyDown)
+})
 </script>
 
 <style scoped>
-.border-e {
-  border-right: 1px solid #e0e0e0;
+.designer-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
 }
 
-.border-s {
+.left-panel {
+  flex-shrink: 0;
+  background-color: #fafafa;
+  border-right: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.right-panel {
+  flex-shrink: 0;
+  background-color: #fafafa;
   border-left: 1px solid #e0e0e0;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.toolbar {
+  flex-shrink: 0;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: #fafafa;
+}
+
+.canvas-container {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
 }
 
 .code-preview {
@@ -130,5 +308,33 @@ const resetDesigner = () => {
   font-family: 'Courier New', monospace;
   font-size: 12px;
   line-height: 1.4;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .left-panel {
+    width: 240px !important;
+  }
+
+  .right-panel {
+    width: 280px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .designer-layout {
+    flex-direction: column;
+  }
+
+  .left-panel,
+  .right-panel {
+    width: 100% !important;
+    height: 200px;
+  }
+
+  .main-content {
+    flex: 1;
+    min-height: 0;
+  }
 }
 </style>
