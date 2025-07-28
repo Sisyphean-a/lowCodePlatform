@@ -15,20 +15,47 @@ export function pixelToGridPosition(x, y, gridConfig, gridContainer) {
   if (!gridContainer) return { column: 1, row: 1 }
 
   const rect = gridContainer.getBoundingClientRect()
-  // x, y 已经是相对于容器的坐标，不需要再减去 rect.left/top
-  const relativeX = x
-  const relativeY = y
 
-  // 计算单元格尺寸
-  const cellWidth = rect.width / gridConfig.columns
+  // 解析gap值
+  const columnGapPx = parseInt(gridConfig.columnGap) || 20
+  const rowGapPx = parseInt(gridConfig.rowGap) || 20
+
+  // 减去padding偏移，因为网格容器现在有padding
+  const relativeX = x - columnGapPx
+  const relativeY = y - rowGapPx
+
+  // 如果点击在padding区域内，返回边界位置
+  if (relativeX < 0 || relativeY < 0) {
+    return { column: 1, row: 1 }
+  }
+
+  // 计算考虑gap和padding的单元格尺寸
+  const availableWidth = rect.width - 2 * columnGapPx
+  const cellWidth = (availableWidth - (gridConfig.columns - 1) * columnGapPx) / gridConfig.columns
   const cellHeight = getCellHeight(gridConfig, gridContainer)
 
   // 计算Grid坐标（从1开始）
-  // 使用 Math.floor 而不是 Math.ceil 来获得更准确的位置
-  const column = Math.max(1, Math.min(gridConfig.columns, Math.floor(relativeX / cellWidth) + 1))
-  const row = Math.max(1, Math.floor(relativeY / cellHeight) + 1)
+  // 需要考虑gap的影响
+  let column = 1
+  let accumulatedWidth = 0
 
-  return { column, row }
+  for (let i = 1; i <= gridConfig.columns; i++) {
+    const cellEnd = accumulatedWidth + cellWidth
+    if (relativeX <= cellEnd) {
+      column = i
+      break
+    }
+    accumulatedWidth = cellEnd + columnGapPx
+  }
+
+  // 行的计算相对简单，因为行高是固定的
+  const totalRowHeight = cellHeight + rowGapPx
+  const row = Math.max(1, Math.floor(relativeY / totalRowHeight) + 1)
+
+  return {
+    column: Math.max(1, Math.min(gridConfig.columns, column)),
+    row
+  }
 }
 
 /**
@@ -163,7 +190,7 @@ export function getGridContainerStyles(gridConfig) {
     rowGap = '20px',
     minRowHeight = '60px'
   } = gridConfig
-  
+
   return {
     display: 'grid',
     gridTemplateColumns: `repeat(${columns}, 1fr)`,
@@ -171,6 +198,7 @@ export function getGridContainerStyles(gridConfig) {
       ? `repeat(10, ${minRowHeight})` // 创建10行固定高度的网格
       : `repeat(${gridConfig.rows}, ${minRowHeight})`,
     gap: `${rowGap} ${columnGap}`,
+    padding: `${rowGap} ${columnGap}`, // 添加padding，让最外面一圈也有gap
     width: '100%',
     minHeight: '400px',
     gridAutoRows: minRowHeight // 确保新行也使用固定高度
@@ -239,20 +267,12 @@ export function getGridLinesStyles(gridConfig) {
 
   const {
     columns = 3,
+    columnGap = '20px',
+    rowGap = '20px',
     minRowHeight = '60px'
   } = gridConfig
 
-  // 解析最小行高
-  const minHeight = parseInt(minRowHeight) || 60
-
-  // 计算网格线的尺寸，考虑间距
-  const colGap = parseInt(gridConfig.columnGap) || 20
-  const rowGapValue = parseInt(gridConfig.rowGap) || 20
-
-  // 计算每个网格单元格的实际尺寸（包括间距）
-  const columnWidth = `calc((100% + ${colGap}px) / ${columns})`
-  const rowHeight = minHeight + rowGapValue
-
+  // 使用与实际Grid完全相同的布局来绘制网格线
   return {
     position: 'absolute',
     top: 0,
@@ -260,15 +280,45 @@ export function getGridLinesStyles(gridConfig) {
     right: 0,
     bottom: 0,
     pointerEvents: 'none',
-    zIndex: 10, // 提高z-index确保网格线在最上层
-    backgroundImage: `
-      linear-gradient(to right, rgba(0, 123, 255, 0.8) 2px, transparent 2px),
-      linear-gradient(to bottom, rgba(0, 123, 255, 0.8) 2px, transparent 2px)
-    `,
-    backgroundSize: `${columnWidth} ${rowHeight}px`,
-    backgroundPosition: '0 0',
-    // 添加边框增强视觉效果
+    zIndex: 5, // 降低z-index，确保不遮挡组件
+    // 使用与实际Grid完全相同的CSS Grid布局
+    display: 'grid',
+    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+    gridTemplateRows: `repeat(10, ${minRowHeight})`,
+    gap: `${rowGap} ${columnGap}`,
+    padding: `${rowGap} ${columnGap}`, // 添加与容器相同的padding
+    // 添加外边框
     border: '2px solid rgba(0, 123, 255, 0.6)',
     borderRadius: '4px'
   }
+}
+
+/**
+ * 生成网格单元格指示器的样式（用于在模板中渲染）
+ * @param {Object} gridConfig - Grid配置
+ * @returns {Array} 网格单元格数组
+ */
+export function getGridCells(gridConfig) {
+  const { columns = 3 } = gridConfig
+  const cells = []
+
+  // 生成前10行的网格单元格
+  for (let row = 1; row <= 10; row++) {
+    for (let col = 1; col <= columns; col++) {
+      cells.push({
+        column: col,
+        row: row,
+        style: {
+          gridColumnStart: col,
+          gridColumnEnd: col + 1,
+          gridRowStart: row,
+          gridRowEnd: row + 1,
+          border: '1px solid rgba(0, 123, 255, 0.3)',
+          backgroundColor: 'rgba(0, 123, 255, 0.05)'
+        }
+      })
+    }
+  }
+
+  return cells
 }

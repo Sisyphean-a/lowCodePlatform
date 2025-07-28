@@ -16,8 +16,13 @@
         class="grid-lines"
         :style="gridLinesStyles"
       >
-        <!-- 网格边框 -->
-        <div class="grid-border"></div>
+        <!-- 网格单元格指示器 -->
+        <div
+          v-for="cell in gridCells"
+          :key="`cell-${cell.row}-${cell.column}`"
+          class="grid-cell"
+          :style="cell.style"
+        ></div>
       </div>
 
       <!-- 拖拽悬停指示器 -->
@@ -76,6 +81,7 @@ import {
   getGridContainerStyles,
   getGridItemStyles as getGridItemStylesUtil,
   getGridLinesStyles,
+  getGridCells,
   pixelToGridPosition,
   gridToPixelPosition,
   isGridPositionOccupied,
@@ -106,6 +112,11 @@ const gridContainerStyles = computed(() => {
 // Grid网格线样式
 const gridLinesStyles = computed(() => {
   return getGridLinesStyles(gridConfig.value)
+})
+
+// Grid网格单元格
+const gridCells = computed(() => {
+  return getGridCells(gridConfig.value)
 })
 
 // 调整手柄方向
@@ -353,16 +364,13 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.grid-border {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border: 3px solid rgba(0, 123, 255, 0.7);
-  border-radius: 6px;
+.grid-cell {
   pointer-events: none;
-  box-shadow: 0 0 0 1px rgba(0, 123, 255, 0.2);
+  transition: background-color 0.2s ease;
+}
+
+.grid-cell:hover {
+  background-color: rgba(0, 123, 255, 0.1) !important;
 }
 
 .grid-item {
