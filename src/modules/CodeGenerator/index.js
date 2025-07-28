@@ -190,16 +190,27 @@ export default {
 
 // 生成样式部分
 function generateStyle(formConfig) {
-  const columns = formConfig.layout.columns || 3
-  const gap = formConfig.layout.gap || '20px'
-  
+  const layout = formConfig.layout
+  const columns = layout.columns || 3
+  const columnGap = layout.columnGap || '20px'
+  const rowGap = layout.rowGap || '20px'
+  const minRowHeight = layout.minRowHeight || '60px'
+
+  // 生成Grid模板行
+  let gridTemplateRows = 'auto'
+  if (layout.rows !== 'auto' && typeof layout.rows === 'number') {
+    gridTemplateRows = `repeat(${layout.rows}, minmax(${minRowHeight}, auto))`
+  }
+
   return `<style scoped lang="scss">
 .formGrid {
   display: grid;
   grid-template-columns: repeat(${columns}, minmax(0, 1fr));
-  gap: 0 ${gap};
+  grid-template-rows: ${gridTemplateRows};
+  gap: ${rowGap} ${columnGap};
   margin: 10px 10px;
   text-align: right;
+  min-height: 400px;
 }
 
 .bonusButtonDiv {

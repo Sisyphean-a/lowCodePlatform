@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import {
+  findNextAvailablePosition,
+  isValidGridPosition,
+  convertPositionToGrid,
+  isGridPositionOccupied
+} from '@/utils/gridUtils'
 
 export const useDesignerStore = defineStore('designer', () => {
   // 表单组件列表
@@ -16,8 +22,13 @@ export const useDesignerStore = defineStore('designer', () => {
     labelWidth: '100px',
     model: 'conditionParam',
     layout: {
+      type: 'grid',
       columns: 3,
-      gap: '20px'
+      rows: 'auto',
+      columnGap: '20px',
+      rowGap: '20px',
+      minRowHeight: '60px',
+      showGridLines: true
     }
   })
 
@@ -76,20 +87,31 @@ export const useDesignerStore = defineStore('designer', () => {
   function addComponent(componentData) {
     saveHistory() // 保存历史状态
 
+    // 查找下一个可用的Grid位置
+    const gridPosition = findNextAvailablePosition(
+      formConfig.value.layout,
+      components.value,
+      1,
+      1
+    )
+
     const newComponent = {
       id: `comp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ...componentData,
+      // 保留position以兼容旧版本
       position: {
-        x: 50 + (components.value.length * 20), // 自由定位
+        x: 50 + (components.value.length * 20),
         y: 50 + (components.value.length * 20),
         width: 200,
         height: 40,
         zIndex: components.value.length + 1
       },
-      // 保留网格位置以兼容旧版本
+      // 使用Grid位置作为主要定位方式
       gridPosition: {
-        row: Math.floor(components.value.length / formConfig.value.layout.columns) + 1,
-        col: (components.value.length % formConfig.value.layout.columns) + 1
+        column: gridPosition.column,
+        row: gridPosition.row,
+        columnSpan: 1,
+        rowSpan: 1
       }
     }
     components.value.push(newComponent)
@@ -218,6 +240,64 @@ export const useDesignerStore = defineStore('designer', () => {
     return null
   }
 
+  // 更新Grid布局配置
+  function updateGridLayout(layoutConfig) {
+    saveHistory()
+    formConfig.value.layout = {
+      ...formConfig.value.layout,
+      ...layoutConfig
+    }
+  }
+
+  // 更新组件Grid位置
+  function updateComponentGridPosition(componentId, gridPosition) {
+    const component = components.value.find(comp => comp.id === componentId)
+    if (component) {
+      // 验证Grid位置是否有效
+      if (isValidGridPosition(
+        gridPosition.column,
+        gridPosition.row,
+        gridPosition.columnSpan || 1,
+        gridPosition.rowSpan || 1,
+        formConfig.value.layout
+      )) {
+        // 检查是否与其他组件冲突
+        if (!isGridPositionOccupied(
+          gridPosition.column,
+          gridPosition.row,
+          gridPosition.columnSpan || 1,
+          gridPosition.rowSpan || 1,
+          components.value,
+          componentId
+        )) {
+          component.gridPosition = {
+            ...component.gridPosition,
+            ...gridPosition
+          }
+        }
+      }
+    }
+  }
+
+  // 自动排列所有组件到Grid
+  function autoArrangeComponents() {
+    saveHistory()
+    components.value.forEach((component, index) => {
+      const gridPosition = findNextAvailablePosition(
+        formConfig.value.layout,
+        components.value.slice(0, index),
+        component.gridPosition?.columnSpan || 1,
+        component.gridPosition?.rowSpan || 1
+      )
+      component.gridPosition = {
+        column: gridPosition.column,
+        row: gridPosition.row,
+        columnSpan: component.gridPosition?.columnSpan || 1,
+        rowSpan: component.gridPosition?.rowSpan || 1
+      }
+    })
+  }
+
   // 重置设计器
   function reset() {
     saveHistory()
@@ -228,8 +308,13 @@ export const useDesignerStore = defineStore('designer', () => {
       labelWidth: '100px',
       model: 'conditionParam',
       layout: {
+        type: 'grid',
         columns: 3,
-        gap: '20px'
+        rows: 'auto',
+        columnGap: '20px',
+        rowGap: '20px',
+        minRowHeight: '60px',
+        showGridLines: true
       }
     }
     canvasConfig.value = {
@@ -279,6 +364,10 @@ export const useDesignerStore = defineStore('designer', () => {
     copyComponent,
     pasteComponent,
     reset,
-    saveHistory
+    saveHistory,
+    // Grid相关方法
+    updateGridLayout,
+    updateComponentGridPosition,
+    autoArrangeComponents
   }
 })

@@ -1,31 +1,36 @@
 <template>
   <div class="drag-area">
     <div class="canvas-wrapper" ref="canvasWrapper">
-      <!-- 画布背景网格 -->
-      <div
-        class="canvas-background"
-        :class="{ 'show-grid': canvasConfig.showGrid }"
-        :style="canvasBackgroundStyle"
-      ></div>
+      <!-- Grid布局框架 -->
+      <GridLayoutFramework />
 
-      <!-- 主画布区域 -->
-      <div
-        class="design-canvas"
-        :class="{ 'drag-over': isDragOver }"
-        :style="canvasStyle"
-        @drop="handleDrop"
-        @dragover="handleDragOver"
-        @dragenter="handleDragEnter"
-        @dragleave="handleDragLeave"
-        @click="handleCanvasClick"
-        ref="canvas"
-      >
-        <!-- 空状态提示 -->
-        <div v-if="components.length === 0" class="empty-state">
-          <v-icon size="64" color="grey-lighten-1">mdi-drag</v-icon>
-          <p class="text-grey-lighten-1 mt-4">从左侧拖拽组件到这里开始设计</p>
-          <p class="text-grey-lighten-2 mt-2">支持自由拖拽定位和调整大小</p>
-        </div>
+      <!-- 保留原有的自由定位画布（可选切换） -->
+      <div v-if="false" class="legacy-canvas">
+        <!-- 画布背景网格 -->
+        <div
+          class="canvas-background"
+          :class="{ 'show-grid': canvasConfig.showGrid }"
+          :style="canvasBackgroundStyle"
+        ></div>
+
+        <!-- 主画布区域 -->
+        <div
+          class="design-canvas"
+          :class="{ 'drag-over': isDragOver }"
+          :style="canvasStyle"
+          @drop="handleDrop"
+          @dragover="handleDragOver"
+          @dragenter="handleDragEnter"
+          @dragleave="handleDragLeave"
+          @click="handleCanvasClick"
+          ref="canvas"
+        >
+          <!-- 空状态提示 -->
+          <div v-if="components.length === 0" class="empty-state">
+            <v-icon size="64" color="grey-lighten-1">mdi-drag</v-icon>
+            <p class="text-grey-lighten-1 mt-4">从左侧拖拽组件到这里开始设计</p>
+            <p class="text-grey-lighten-2 mt-2">支持自由拖拽定位和调整大小</p>
+          </div>
 
         <!-- 组件渲染区域 -->
         <div v-else class="components-container">
@@ -91,12 +96,13 @@
           </div>
         </div>
 
-        <!-- 选择框 -->
-        <div
-          v-if="selectionBox.visible"
-          class="selection-box"
-          :style="selectionBoxStyle"
-        ></div>
+          <!-- 选择框 -->
+          <div
+            v-if="selectionBox.visible"
+            class="selection-box"
+            :style="selectionBoxStyle"
+          ></div>
+        </div>
       </div>
     </div>
   </div>
@@ -107,6 +113,7 @@ import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useDesignerStore } from '@/stores/designer'
 import { useComponentsStore } from '@/stores/components'
 import ComponentRenderer from './ComponentRenderer.vue'
+import { GridLayoutFramework } from '@/modules/GridLayout'
 
 const designerStore = useDesignerStore()
 const componentsStore = useComponentsStore()

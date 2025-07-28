@@ -14,6 +14,10 @@
           <v-icon size="16" class="me-1">mdi-tune</v-icon>
           属性
         </v-tab>
+        <v-tab value="grid">
+          <v-icon size="16" class="me-1">mdi-grid</v-icon>
+          布局
+        </v-tab>
         <v-tab value="tree">
           <v-icon size="16" class="me-1">mdi-file-tree</v-icon>
           结构
@@ -115,6 +119,11 @@
                 </div>
               </div>
             </div>
+          </v-tabs-window-item>
+
+          <!-- Grid布局配置 -->
+          <v-tabs-window-item value="grid" style="height: 100%; overflow-y: auto;">
+            <GridConfigPanel />
           </v-tabs-window-item>
 
           <!-- 组件树 -->
@@ -338,6 +347,7 @@ import { useDesignerStore } from '@/stores/designer'
 import { useComponentsStore } from '@/stores/components'
 import OptionsEditor from './OptionsEditor.vue'
 import ComponentTree from '@/modules/ComponentTree/index.vue'
+import { GridConfigPanel } from '@/modules/GridLayout'
 
 const designerStore = useDesignerStore()
 const componentsStore = useComponentsStore()
