@@ -1,27 +1,8 @@
 <template>
   <div class="component-renderer" :style="componentStyles">
-    <!-- 布局组件 -->
-    <template v-if="isLayoutComponent">
-      <!-- 容器 -->
-      <div v-if="component.type === 'container'" class="container-component">
-        <div class="container-content">
-          <v-icon class="me-2">mdi-view-dashboard-outline</v-icon>
-          容器组件
-        </div>
-      </div>
-
-      <!-- 卡片 -->
-      <v-card v-else-if="component.type === 'card'" :elevation="component.props.elevation" :variant="component.props.outlined ? 'outlined' : 'elevated'">
-        <v-card-title>{{ component.props.title }}</v-card-title>
-        <v-card-text>卡片内容区域</v-card-text>
-      </v-card>
-
-      <!-- 分割线 -->
-      <v-divider v-else-if="component.type === 'divider'" :thickness="component.props.thickness" :color="component.props.color"></v-divider>
-    </template>
 
     <!-- 表单组件 -->
-    <template v-else-if="isFormComponent">
+    <template v-if="isFormComponent">
       <div class="form-item-wrapper">
         <label v-if="component.label" class="form-label">{{ component.label }}</label>
         <div class="form-control">
@@ -306,24 +287,9 @@ const tableData = computed(() => {
   height: 100%;
 }
 
-/* 布局组件样式 */
-.container-component {
-  width: 100%;
-  height: 100%;
-  border: 2px dashed #e0e0e0;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: rgba(0, 0, 0, 0.02);
-}
 
-.container-content {
-  display: flex;
-  align-items: center;
-  color: #666;
-  font-size: 14px;
-}
+
+
 
 /* 表单组件样式 */
 .form-item-wrapper {

@@ -20,6 +20,7 @@
             <v-btn value="2col" size="small">2列</v-btn>
             <v-btn value="3col" size="small">3列</v-btn>
             <v-btn value="4col" size="small">4列</v-btn>
+            <v-btn value="5col" size="small">5列</v-btn>
             <v-btn value="6col" size="small">6列</v-btn>
           </v-btn-toggle>
         </div>
@@ -32,7 +33,7 @@
           <v-slider
             v-model="localConfig.columns"
             :min="1"
-            :max="12"
+            :max="6"
             :step="1"
             show-ticks="always"
             tick-size="4"
@@ -44,7 +45,7 @@
                 v-model.number="localConfig.columns"
                 type="number"
                 :min="1"
-                :max="12"
+                :max="6"
                 density="compact"
                 style="width: 70px"
                 variant="outlined"
@@ -76,7 +77,7 @@
             <v-slider
               v-model="localConfig.fixedRows"
               :min="1"
-              :max="20"
+              :max="5"
               :step="1"
               show-ticks="always"
               tick-size="4"
@@ -88,7 +89,7 @@
                   v-model.number="localConfig.fixedRows"
                   type="number"
                   :min="1"
-                  :max="20"
+                  :max="5"
                   density="compact"
                   style="width: 70px"
                   variant="outlined"
@@ -261,7 +262,8 @@ const presets = {
   '2col': { columns: 2, columnGap: '24px', rowGap: '24px' },
   '3col': { columns: 3, columnGap: '20px', rowGap: '20px' },
   '4col': { columns: 4, columnGap: '16px', rowGap: '16px' },
-  '6col': { columns: 6, columnGap: '12px', rowGap: '12px' }
+  '5col': { columns: 5, columnGap: '12px', rowGap: '12px' },
+  '6col': { columns: 6, columnGap: '10px', rowGap: '10px' }
 }
 
 // 方法
